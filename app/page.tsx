@@ -1,101 +1,145 @@
-import Image from "next/image";
+'use client';
+
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import LoadingCircularProgress from '@/components/LoadingCircularProgress';
+import { Character } from '@/lib/type/character';
+
+const fetchCharacters = async () => {
+  const res = await fetch('https://rickandmortyapi.com/api/character');
+  if (!res.ok) {
+    throw new Error('Data could not be retrieved from the API');
+  }
+  return res.json();
+};
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const {
+    data: charactersData,
+    isLoading,
+    error,
+  } = useQuery(['characters'], fetchCharacters);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [genderFilter, setGenderFilter] = useState<string>('all');
+
+  if (isLoading) {
+    return <LoadingCircularProgress />;
+  }
+
+  if (error instanceof Error) return <div>Error: {error.message}</div>;
+
+  const characters = charactersData?.results || [];
+
+  const filteredCharacters = characters.filter((character: Character) => {
+    const matchesStatus =
+      statusFilter === 'all' || character.status.toLowerCase() === statusFilter;
+    const matchesGender =
+      genderFilter === 'all' || character.gender.toLowerCase() === genderFilter;
+    return matchesStatus && matchesGender;
+  });
+
+  return (
+    <div className="min-h-screen p-6 bg-gradient-to-r from-green-500 via-blue-500  to-red-500 rounded-lg shadow-xl w-full mx-auto">
+      <h1 className="text-4xl font-extrabold text-white text-center mb-8 drop-shadow-lg">
+        Character List
+      </h1>
+
+      <div className="flex justify-center gap-8 mb-8">
+        <div className="flex flex-col items-center">
+          <label
+            htmlFor="status"
+            className="text-white text-lg font-semibold mb-2"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            Status
+          </label>
+          <select
+            id="status"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="p-3 rounded-md border-2 border-gray-300 bg-white shadow-md text-lg focus:ring-2 focus:ring-pink-500 cursor-pointer"
           >
-            Read our docs
-          </a>
+            <option value="all">All</option>
+            <option value="alive">Alive</option>
+            <option value="dead">Dead</option>
+            <option value="unknown">Unknown</option>
+          </select>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+
+        <div className="flex flex-col items-center">
+          <label
+            htmlFor="gender"
+            className="text-white text-lg font-semibold mb-2"
+          >
+            Gender
+          </label>
+          <select
+            id="gender"
+            value={genderFilter}
+            onChange={(e) => setGenderFilter(e.target.value)}
+            className="p-3 rounded-md border-2 border-gray-300 bg-white shadow-md text-lg focus:ring-2 focus:ring-pink-500 cursor-pointer"
+          >
+            <option value="all">All</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+            <option value="unknown">Unknown</option>
+          </select>
+        </div>
+      </div>
+
+      {filteredCharacters.length === 0 ? (
+        <p className="text-white text-center  font-semibold mt-12 max-sm:text-sm text-2xl">
+          No characters match the selected filters.
+        </p>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 max-w-7xl mx-auto">
+          {filteredCharacters.map((character: Character) => (
+            <div
+              key={character.id}
+              className="bg-white border-2 border-gray-300 rounded-lg p-6 shadow-lg hover:shadow-2xl transition-transform transform hover:scale-105"
+            >
+              <h3 className="text-lg font-semibold text-center text-pink-600 mb-4">
+                {character.name}
+              </h3>
+              <img
+                src={
+                  typeof character.image === 'string'
+                    ? character.image
+                    : character.image.src
+                }
+                alt={character.name}
+                className="rounded-md mb-4 w-full h-56 object-cover"
+              />
+              <div className="flex justify-between text-lg">
+                <p
+                  className={`px-4 py-2 rounded-md ${
+                    character.status.toLowerCase() === 'alive'
+                      ? 'bg-green-400'
+                      : character.status.toLowerCase() === 'dead'
+                      ? 'bg-red-400'
+                      : 'bg-gray-300'
+                  } text-white`}
+                >
+                  {character.status.charAt(0).toUpperCase() +
+                    character.status.slice(1)}
+                </p>
+                <p
+                  className={`px-4 py-2 rounded-md ${
+                    character.gender.toLowerCase() === 'male'
+                      ? 'bg-blue-400'
+                      : character.gender.toLowerCase() === 'female'
+                      ? 'bg-pink-400'
+                      : 'bg-gray-300'
+                  } text-white`}
+                >
+                  {character.gender.charAt(0).toUpperCase() +
+                    character.gender.slice(1)}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
